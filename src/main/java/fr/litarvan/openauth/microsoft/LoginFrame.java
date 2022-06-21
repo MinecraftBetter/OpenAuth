@@ -103,7 +103,7 @@ public class LoginFrame extends JFrame
                     @Override
                     protected URLConnection openConnection(URL url) throws IOException
                     {
-                        return openConnection(url, null);
+                        return openConnection(url, Proxy.NO_PROXY);
                     }
 
                     @Override

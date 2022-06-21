@@ -90,6 +90,9 @@ authenticator.invalidate("accessToken", "clientToken");
 
 
 # How to build
+
 ```shell
- mvn install:install-file "-Dfile=openauth-1.1.3.jar" "-DgroupId=fr.litarvan" "-DartifactId=openauth" "-Dversion=1.1.3" "-Dpackaging=jar" "-DgeneratePom=true"
+./gradlew.bat jar
+cd build/libs
+mvn install:install-file "-Dfile=openauth-1.1.3.jar" "-DgroupId=fr.litarvan" "-DartifactId=openauth" "-Dversion=1.1.3" "-Dpackaging=jar" "-DgeneratePom=true"
 ```
