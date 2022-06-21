@@ -72,7 +72,7 @@ public class LoginFrame extends JFrame
     protected void init(String url)
     {
         try {
-            overrideFactory();
+            //overrideFactory();
         } catch (Throwable ignored) {
             // If the handler was already defined, we can safely ignore this.
             // If it isn't the right one, we can't override it anyway.
