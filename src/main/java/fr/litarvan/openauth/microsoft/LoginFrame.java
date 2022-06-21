@@ -22,7 +22,6 @@ import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.web.WebView;
-import sun.net.www.protocol.https.Handler;
 
 import javax.swing.*;
 import java.awt.event.WindowAdapter;
@@ -99,7 +98,7 @@ public class LoginFrame extends JFrame
     {
         URL.setURLStreamHandlerFactory(protocol -> {
             if ("https".equals(protocol)) {
-                return new Handler()
+                return new URLStreamHandler()
                 {
                     @Override
                     protected URLConnection openConnection(URL url) throws IOException
