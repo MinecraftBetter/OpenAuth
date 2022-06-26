@@ -23,7 +23,6 @@ import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -133,11 +132,7 @@ public class HttpClient
                 query.append('&');
             }
 
-            try {
-                query.append(key).append('=').append(URLEncoder.encode(value, "UTF-8"));
-            } catch (UnsupportedEncodingException ignored) {
-                // Can't happen
-            }
+            query.append(key).append('=').append(URLEncoder.encode(value, StandardCharsets.UTF_8));
         });
 
         return query.toString();
@@ -157,6 +152,8 @@ public class HttpClient
                 "Chrome/71.0.3578.98 " +
                 "Safari/537.36";
 
+        connection.setConnectTimeout(30 * 1000); // 30s
+        connection.setReadTimeout(60 * 1000); // 60s
         connection.setRequestProperty("Accept-Language", "en-US");
         connection.setRequestProperty("Accept-Charset", "UTF-8");
         connection.setRequestProperty("User-Agent", userAgent);
