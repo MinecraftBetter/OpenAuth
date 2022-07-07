@@ -20,9 +20,7 @@ package fr.litarvan.openauth.microsoft;
 
 import com.google.gson.Gson;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -102,16 +100,58 @@ public class HttpClient
         }
 
         StringBuilder response = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                response.append(line).append('\n');
+
+        try
+        {
+            InputStream inputStream = connection.getInputStream();
+
+            // check if the url corresponds to a related authentication url
+            if(this.checkUrl(connection.getURL()))
+            {
+                // then patch the input stream like in the old MicrosoftPatchedHttpURLConnection class.
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                int n;
+                byte[] data = new byte[8192];
+
+                while ((n = inputStream.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, n);
+                }
+
+                byte[] patched = buffer
+                        .toString("UTF-8")
+                        .replaceAll("integrity ?=", "integrity.disabled=")
+                        .replaceAll("setAttribute\\(\"integrity\"", "setAttribute(\"integrity.disabled\"")
+                        .getBytes(StandardCharsets.UTF_8);
+
+                inputStream = new ByteArrayInputStream(patched);
             }
-        } catch (IOException e) {
-            throw new MicrosoftAuthenticationException(e);
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    response.append(line).append('\n');
+                }
+            } catch (IOException e) {
+                throw new MicrosoftAuthenticationException(e);
+            }
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
         }
 
         return response.toString();
+    }
+
+    private boolean checkUrl(URL url)
+    {
+        return (("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/authorize"))
+                || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
+                || ("login.live.com".equals(url.getHost()) && "/ppsecure/post.srf".equals(url.getPath()))
+                || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
+                || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/login"))
+                || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/SAS/ProcessAuth"))
+                || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/federation/oauth2"))
+                || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/v2.0/authorize")));
     }
 
     protected HttpURLConnection followRedirects(HttpURLConnection connection) throws MicrosoftAuthenticationException
@@ -132,7 +172,11 @@ public class HttpClient
                 query.append('&');
             }
 
-            query.append(key).append('=').append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+            try {
+                query.append(key).append('=').append(URLEncoder.encode(value, "UTF-8"));
+            } catch (UnsupportedEncodingException ignored) {
+                // Can't happen
+            }
         });
 
         return query.toString();
@@ -152,8 +196,6 @@ public class HttpClient
                 "Chrome/71.0.3578.98 " +
                 "Safari/537.36";
 
-        connection.setConnectTimeout(30 * 1000); // 30s
-        connection.setReadTimeout(60 * 1000); // 60s
         connection.setRequestProperty("Accept-Language", "en-US");
         connection.setRequestProperty("Accept-Charset", "UTF-8");
         connection.setRequestProperty("User-Agent", userAgent);
